@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cindrall — Roblox & Discord Developer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --gold: #C9A96E;
+    --gold-light: #DFC08A;
+    --gold-dim: rgba(201,169,110,0.12);
+    --gold-border: rgba(201,169,110,0.2);
+    --gold-border-strong: rgba(201,169,110,0.42);
+    --bg: #080808;
+    --bg-2: #0C0C0C;
+    --bg-card: #0E0E0E;
+    --fg: #EDE9E3;
+    --fg-muted: #736B62;
+    --fg-dim: #2E2C28;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'Outfit', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 998;
+    opacity: 0.022;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  ::selection { background: var(--gold-dim); color: var(--fg); }
+  a { color: inherit; text-decoration: none; }
+  .page { width: min(1080px, 90%); margin: auto; }
+
+  /* ── CURSOR ── */
+  #cursor {
+    position: fixed;
+    width: 10px; height: 10px;
+    background: var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: width 0.25s, height 0.25s, opacity 0.25s;
+    mix-blend-mode: difference;
+  }
+  #cursor.big { width: 38px; height: 38px; opacity: 0.35; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.4s, background 0.4s, backdrop-filter 0.4s;
+  }
+  nav.scrolled {
+    background: rgba(8,8,8,0.88);
+    backdrop-filter: blur(24px);
+    border-color: var(--gold-border);
+  }
+  .nav-inner {
+    width: min(1080px, 90%);
+    margin: auto;
+    padding: 22px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    letter-spacing: 0.06em;
+    color: var(--fg);
+  }
+  .logo span { color: var(--gold); }
+  .nav-links {
+    display: flex;
+    gap: 34px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+  .nav-links a { transition: color 0.2s; position: relative; }
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -3px; left: 0; right: 100%;
+    height: 1px;
+    background: var(--gold);
+    transition: right 0.3s;
+  }
+  .nav-links a:hover { color: var(--fg); }
+  .nav-links a:hover::after { right: 0; }
+  .nav-cta {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 9px 20px;
+    border: 1px solid var(--gold-border-strong);
+    color: var(--gold-light);
+    transition: background 0.2s, color 0.2s;
+  }
+  .nav-cta:hover { background: var(--gold); color: var(--bg); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-bottom: 88px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 55% at 70% 30%, rgba(201,169,110,0.08) 0%, transparent 65%),
+      radial-gradient(ellipse 35% 40% at 15% 75%, rgba(201,169,110,0.04) 0%, transparent 60%),
+      var(--bg);
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(201,169,110,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201,169,110,0.035) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+  }
+  .hero-vline {
+    position: absolute; top: 0; bottom: 0; width: 1px;
+    background: linear-gradient(to bottom, transparent, var(--gold-border) 25%, var(--gold-border) 75%, transparent);
+  }
+  .v1 { left: 33.33%; }
+  .v2 { left: 66.66%; }
+
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .hero-tag::before { content: ''; width: 36px; height: 1px; background: var(--gold); }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(3.6rem, 9.5vw, 8.5rem);
+    font-weight: 300;
+    line-height: 0.93;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+    margin-bottom: 38px;
+  }
+  .hero h1 em { font-style: italic; color: var(--gold); }
+
+  .hero-sub {
+    max-width: 480px;
+    font-size: 0.96rem;
+    color: var(--fg-muted);
+    line-height: 1.9;
+    margin-bottom: 52px;
+  }
+
+  .hero-btns { display: flex; align-items: center; gap: 28px; }
+
+  .btn-gold {
+    display: inline-block;
+    padding: 13px 30px;
+    background: var(--gold);
+    color: var(--bg);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-gold:hover {
+    background: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(201,169,110,0.22);
+  }
+
+  .btn-outline {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 13px 22px;
+    border: 1px solid var(--gold-border-strong);
+    color: var(--fg-muted);
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-outline:hover { color: var(--gold-light); border-color: var(--gold); }
+
+  .hero-scroll {
+    position: absolute;
+    bottom: 36px; right: 0;
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .hero-scroll::before {
+    content: '';
+    width: 1px; height: 48px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: scrollPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes scrollPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+  /* ── SECTION SHARED ── */
+  section { padding: 100px 0; }
+  .section-tag {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 18px;
+  }
+  .section-tag::before { content: ''; width: 24px; height: 1px; background: var(--gold); }
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 4.5vw, 3.6rem);
+    font-weight: 300;
+    line-height: 1.05;
+    color: var(--fg);
+    margin-bottom: 16px;
+  }
+  .section-title em { font-style: italic; color: var(--gold); }
+  .section-sub {
+    font-size: 0.92rem;
+    color: var(--fg-muted);
+    line-height: 1.85;
+    max-width: 680px;
+    margin-bottom: 52px;
+  }
+
+  /* ── ORNAMENT ── */
+  .ornament { display: flex; align-items: center; gap: 16px; }
+  .ornament-line { flex: 1; height: 1px; background: var(--gold-border); }
+  .ornament-diamond {
+    width: 7px; height: 7px;
+    border: 1px solid var(--gold-border-strong);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  /* ── WORK / PROJECTS ── */
+  .work-list {
+    display: flex; flex-direction: column;
+    gap: 1px;
+    background: var(--gold-border);
+    border: 1px solid var(--gold-border);
+  }
+  .work-item {
+    background: var(--bg-card);
+    padding: 42px 40px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: start;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+  .work-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0; width: 0;
+    background: var(--gold);
+    transition: width 0.35s cubic-bezier(0.25,0,0,1);
+  }
+  .work-item:hover::before { width: 2px; }
+  .work-item:hover { background: #121210; }
+
+  .work-num {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .work-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.56rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--gold-border-strong);
+    padding: 4px 9px;
+    margin-bottom: 12px;
+  }
+  .work-title {
+    font-family: var(--serif);
+    font-size: 1.7rem;
+    font-weight: 400;
+    color: var(--fg);
+    margin-bottom: 10px;
+    line-height: 1.15;
+  }
+  .work-desc {
+    font-size: 0.87rem;
+    color: var(--fg-muted);
+    line-height: 1.85;
+    max-width: 580px;
+    margin-bottom: 18px;
+  }
+  .work-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .work-tag {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border: 1px solid var(--fg-dim);
+    color: var(--fg-muted);
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .work-item:hover .work-tag { border-color: var(--gold-border); color: var(--gold-light); }
+
+  .work-arrow {
+    font-size: 1.2rem;
+    color: var(--gold);
+    opacity: 0.4;
+    transition: transform 0.25s, opacity 0.25s;
+  }
+  .work-item:hover .work-arrow { transform: translate(5px,-5px); opacity: 1; }
+  .work-link {
+    display: inline-block;
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border-bottom: 1px solid var(--gold-border-strong);
+    padding-bottom: 2px;
+    transition: color 0.2s;
+  }
+  .work-link:hover { color: var(--gold-light); }
+
+  /* ── CAPABILITIES GRID ── */
+  .cap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--gold-border);
+    border: 1px solid var(--gold-border);
+  }
+  .cap-box {
+    background: var(--bg-card);
+    padding: 36px 30px;
+    transition: background 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .cap-box::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0; height: 0;
+    background: linear-gradient(to top, rgba(201,169,110,0.05), transparent);
+    transition: height 0.35s;
+  }
+  .cap-box:hover { background: #111108; }
+  .cap-box:hover::after { height: 100%; }
+  .cap-num {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .cap-name {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: var(--fg);
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+  .cap-desc {
+    font-size: 0.84rem;
+    color: var(--fg-muted);
+    line-height: 1.85;
+  }
+
+  /* ── SKILLS ── */
+  .skills-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--gold-border);
+    border: 1px solid var(--gold-border);
+  }
+  .skill-box {
+    background: var(--bg-card);
+    padding: 40px 36px;
+  }
+  .skill-box-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .skill-box-title::before { content: ''; width: 20px; height: 1px; background: var(--gold); }
+  .skill-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skill-pill {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    color: var(--fg-muted);
+    border: 1px solid var(--fg-dim);
+    padding: 7px 13px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .skill-pill:hover { border-color: var(--gold-border-strong); color: var(--gold-light); }
+
+  /* ── ABOUT ── */
+  .about-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+    align-items: center;
+  }
+  .about-visual {
+    position: relative;
+    aspect-ratio: 4/5;
+    background: var(--bg-2);
+    border: 1px solid var(--gold-border);
+    overflow: hidden;
+  }
+  .about-grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--gold-border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--gold-border) 1px, transparent 1px);
+    background-size: 44px 44px;
+    opacity: 0.35;
+  }
+  .about-corner {
+    position: absolute;
+    width: 18px; height: 18px;
+  }
+  .ac-tl { top: 14px; left: 14px; border-top: 1px solid var(--gold); border-left: 1px solid var(--gold); }
+  .ac-tr { top: 14px; right: 14px; border-top: 1px solid var(--gold); border-right: 1px solid var(--gold); }
+  .ac-bl { bottom: 14px; left: 14px; border-bottom: 1px solid var(--gold); border-left: 1px solid var(--gold); }
+  .ac-br { bottom: 14px; right: 14px; border-bottom: 1px solid var(--gold); border-right: 1px solid var(--gold); }
+  .about-accent { position: absolute; top: 50%; right: -1px; transform: translateY(-50%); width: 3px; height: 56px; background: var(--gold); }
+  .about-name-block { position: absolute; bottom: 32px; left: 28px; }
+  .about-name-text {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--fg);
+    line-height: 1; margin-bottom: 8px;
+  }
+  .about-name-role {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .about-text p {
+    font-size: 0.94rem;
+    color: var(--fg-muted);
+    line-height: 1.9;
+    margin-bottom: 18px;
+  }
+  .about-text strong { color: var(--fg); font-weight: 400; }
+  .about-best {
+    margin-top: 36px;
+    padding: 28px 28px;
+    border: 1px solid var(--gold-border);
+    background: var(--bg-2);
+    position: relative;
+  }
+  .about-best::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0; width: 2px;
+    background: var(--gold);
+  }
+  .about-best-label {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+  .about-best p {
+    font-size: 0.88rem;
+    color: var(--fg-muted);
+    line-height: 1.85;
+  }
+
+  /* ── CONTACT ── */
+  #contact { background: var(--bg-2); border-top: 1px solid var(--gold-border); }
+  .contact-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+    align-items: start;
+  }
+  .contact-intro {
+    font-size: 0.94rem;
+    color: var(--fg-muted);
+    line-height: 1.9;
+    margin-bottom: 36px;
+  }
+  .contact-detail {
+    display: flex; align-items: flex-start; gap: 14px;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--fg-muted);
+    margin-bottom: 14px;
+  }
+  .contact-dot { width: 5px; height: 5px; background: var(--gold); margin-top: 7px; flex-shrink: 0; }
+  .contact-detail strong { color: var(--gold); font-weight: 400; }
+
+  .contact-btns { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; }
+  .contact-btns a { text-align: center; }
+
+  .contact-quote {
+    border: 1px solid var(--gold-border);
+    padding: 40px 36px;
+    background: var(--bg-card);
+    position: relative;
+    overflow: hidden;
+  }
+  .contact-quote::before {
+    content: '"';
+    font-family: var(--serif);
+    font-size: 8rem;
+    line-height: 1;
+    color: var(--gold);
+    opacity: 0.08;
+    position: absolute;
+    top: 10px; left: 20px;
+    font-weight: 300;
+    pointer-events: none;
+  }
+  .contact-quote-text {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-style: italic;
+    font-weight: 300;
+    color: var(--fg);
+    line-height: 1.6;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .contact-quote-note {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 34px 0;
+    border-top: 1px solid var(--gold-border);
+  }
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { transition: color 0.2s; }
+  .footer-links a:hover { color: var(--gold); }
+
+  /* ── ANIMATIONS ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.72s ease, transform 0.72s ease;
+  }
+  .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 800px) {
+    .nav-links { display: none; }
+    .v2, .hero-scroll { display: none; }
+    .about-layout, .contact-layout { grid-template-columns: 1fr; gap: 40px; }
+    .cap-grid { grid-template-columns: 1fr; }
+    .skills-layout { grid-template-columns: 1fr; }
+    .about-visual { aspect-ratio: 3/2; }
+    .footer-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <div class="logo">cindrall<span>.dev</span></div>
+    <div class="nav-links">
+      <a href="#projects">Projects</a>
+      <a href="#capabilities">Capabilities</a>
+      <a href="#skills">Skills</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <a href="#contact" class="nav-cta">Hire Me</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-vline v1"></div>
+  <div class="hero-vline v2"></div>
+  <div class="page" style="position:relative;">
+    <div class="hero-tag">Roblox Systems · Discord Bots · Available for commissions</div>
+    <h1>
+      Systems that<br>
+      <em>actually</em><br>
+      work.
+    </h1>
+    <p class="hero-sub">
+      I build reliable Roblox systems, UI-connected gameplay features, data-driven progression tools, and Discord security bots for games and communities.
+    </p>
+    <div class="hero-btns">
+      <a href="#projects" class="btn-gold">View Projects</a>
+      <a href="#contact" class="btn-outline">Contact on Discord</a>
+    </div>
+    <div class="hero-scroll">Scroll</div>
+  </div>
+</section>
+
+<!-- PROJECTS -->
+<section id="projects">
+  <div class="page">
+    <div class="fade-up">
+      <div class="section-tag">Featured Work</div>
+      <h2 class="section-title">Projects built<br><em>to last</em></h2>
+      <p class="section-sub">A collection of systems across Roblox development, Discord security, UI scripting, data saving, and server-client architecture.</p>
+    </div>
+    <div class="work-list fade-up">
+
+      <div class="work-item">
+        <div>
+          <div class="work-num">01</div>
+          <div class="work-badge">Featured Project</div>
+          <div class="work-title">Sentinel — Discord Security Bot</div>
+          <p class="work-desc">A Discord security and moderation bot built with Python and discord.py. Focused on anti-raid protection, verification flows, quarantine systems, audit log tracking, permission safety, and full moderation logging.</p>
+          <div class="work-tags">
+            <span class="work-tag">Python</span>
+            <span class="work-tag">discord.py</span>
+            <span class="work-tag">Anti-Raid</span>
+            <span class="work-tag">Verification</span>
+            <span class="work-tag">Quarantine</span>
+            <span class="work-tag">Audit Logs</span>
+          </div>
+          <a class="work-link" href="https://sentinel-project.net/" target="_blank">Visit sentinel-project.net ↗</a>
+        </div>
+        <div class="work-arrow">↗</div>
+      </div>
+
+      <div class="work-item">
+        <div>
+          <div class="work-num">02</div>
+          <div class="work-title">Progression & Data Systems</div>
+          <p class="work-desc">Roblox systems using ProfileService and DataStores to save player stats, selected characters, title progress, achievements, goal completion, and persistent player data across sessions.</p>
+          <div class="work-tags">
+            <span class="work-tag">ProfileService</span>
+            <span class="work-tag">DataStores</span>
+            <span class="work-tag">Leaderstats</span>
+            <span class="work-tag">Progression</span>
+            <span class="work-tag">Achievements</span>
+          </div>
+        </div>
+        <div class="work-arrow">↗</div>
+      </div>
+
+      <div class="work-item">
+        <div>
+          <div class="work-num">03</div>
+          <div class="work-title">UI to Backend Integration</div>
+          <p class="work-desc">Connected Roblox interfaces to server systems using RemoteEvents, RemoteFunctions, LocalScripts, server-side validation, and module-based backend logic for clean, reliable UI behavior.</p>
+          <div class="work-tags">
+            <span class="work-tag">UI Scripting</span>
+            <span class="work-tag">RemoteEvents</span>
+            <span class="work-tag">RemoteFunctions</span>
+            <span class="work-tag">Client-Server</span>
+            <span class="work-tag">ModuleScripts</span>
+          </div>
+        </div>
+        <div class="work-arrow">↗</div>
+      </div>
+
+      <div class="work-item">
+        <div>
+          <div class="work-num">04</div>
+          <div class="work-title">Combat & Character Systems</div>
+          <p class="work-desc">Gameplay systems involving character selection, combat logic, player attributes, status bars, title unlocks, and ability-style mechanics built for real Roblox games.</p>
+          <div class="work-tags">
+            <span class="work-tag">Combat Systems</span>
+            <span class="work-tag">Character Selection</span>
+            <span class="work-tag">Attributes</span>
+            <span class="work-tag">Title Systems</span>
+            <span class="work-tag">Gameplay Logic</span>
+          </div>
+        </div>
+        <div class="work-arrow">↗</div>
+      </div>
+
+      <div class="work-item">
+        <div>
+          <div class="work-num">05</div>
+          <div class="work-title">Module-Based System Design</div>
+          <p class="work-desc">Organized larger features into separate modules, remotes, services, and UI scripts so systems are easy to debug, expand, and connect cleanly across client and server.</p>
+          <div class="work-tags">
+            <span class="work-tag">ModuleScripts</span>
+            <span class="work-tag">Services</span>
+            <span class="work-tag">Clean Structure</span>
+            <span class="work-tag">Debugging</span>
+            <span class="work-tag">Scalable Logic</span>
+          </div>
+        </div>
+        <div class="work-arrow">↗</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="page" style="padding: 0;"><div class="ornament"><div class="ornament-line"></div><div class="ornament-diamond"></div><div class="ornament-line"></div></div></div>
+
+<!-- CAPABILITIES -->
+<section id="capabilities">
+  <div class="page">
+    <div class="fade-up">
+      <div class="section-tag">What I Build</div>
+      <h2 class="section-title">Systems for<br><em>games & communities</em></h2>
+      <p class="section-sub">Types of systems I'm comfortable building, improving, or connecting inside Roblox games and Discord servers.</p>
+    </div>
+    <div class="cap-grid fade-up">
+      <div class="cap-box">
+        <span class="cap-num">01</span>
+        <div class="cap-name">Roblox Game Systems</div>
+        <p class="cap-desc">Combat, progression, character selection, goal systems, title systems, leaderstats, player attributes, and gameplay logic.</p>
+      </div>
+      <div class="cap-box">
+        <span class="cap-num">02</span>
+        <div class="cap-name">Roblox UI Systems</div>
+        <p class="cap-desc">UI scripting, button logic, menus, shop interfaces, goal pages, stat displays — all connected to live server systems.</p>
+      </div>
+      <div class="cap-box">
+        <span class="cap-num">03</span>
+        <div class="cap-name">Data & Saving</div>
+        <p class="cap-desc">ProfileService, DataStores, persistent player data, character selection, achievements, unlocks, and saved progression.</p>
+      </div>
+      <div class="cap-box">
+        <span class="cap-num">04</span>
+        <div class="cap-name">Discord Security Bots</div>
+        <p class="cap-desc">Anti-raid logic, moderation commands, verification flows, quarantine systems, logging, and permission-based protection.</p>
+      </div>
+      <div class="cap-box">
+        <span class="cap-num">05</span>
+        <div class="cap-name">Simulator Architecture</div>
+        <p class="cap-desc">Plots, upgrades, minion logic, money generation, ownership systems, and UI-to-server flow for simulator-style games.</p>
+      </div>
+      <div class="cap-box">
+        <span class="cap-num">06</span>
+        <div class="cap-name">Debugging Codebases</div>
+        <p class="cap-desc">I can work through existing scripts, broken remotes, UI bugs, server/client issues, and disconnected systems step by step.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="page">
+    <div class="fade-up">
+      <div class="section-tag">Technical Skills</div>
+      <h2 class="section-title">What I work<br><em>with every day</em></h2>
+      <p class="section-sub">My strongest skills are building systems that connect frontend UI, backend logic, player data, and real-time events.</p>
+    </div>
+    <div class="skills-layout fade-up">
+      <div class="skill-box">
+        <div class="skill-box-title">Roblox Development</div>
+        <div class="skill-pills">
+          <span class="skill-pill">Luau</span>
+          <span class="skill-pill">Roblox Studio</span>
+          <span class="skill-pill">RemoteEvents</span>
+          <span class="skill-pill">RemoteFunctions</span>
+          <span class="skill-pill">ModuleScripts</span>
+          <span class="skill-pill">UI Scripting</span>
+          <span class="skill-pill">ProfileService</span>
+          <span class="skill-pill">DataStores</span>
+          <span class="skill-pill">Leaderstats</span>
+          <span class="skill-pill">Combat Systems</span>
+          <span class="skill-pill">Progression Systems</span>
+          <span class="skill-pill">Goal Systems</span>
+          <span class="skill-pill">Character Selection</span>
+          <span class="skill-pill">Title Systems</span>
+          <span class="skill-pill">AI Pathfinding</span>
+          <span class="skill-pill">Server-Client Architecture</span>
+        </div>
+      </div>
+      <div class="skill-box">
+        <div class="skill-box-title">Discord Bot Development</div>
+        <div class="skill-pills">
+          <span class="skill-pill">Python</span>
+          <span class="skill-pill">discord.py</span>
+          <span class="skill-pill">Slash Commands</span>
+          <span class="skill-pill">Prefix Commands</span>
+          <span class="skill-pill">Moderation Systems</span>
+          <span class="skill-pill">Anti-Raid Logic</span>
+          <span class="skill-pill">Logging</span>
+          <span class="skill-pill">Verification Systems</span>
+          <span class="skill-pill">Quarantine Systems</span>
+          <span class="skill-pill">Role Permissions</span>
+          <span class="skill-pill">Channel Permissions</span>
+          <span class="skill-pill">Audit Log Tracking</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="page" style="padding: 0;"><div class="ornament"><div class="ornament-line"></div><div class="ornament-diamond"></div><div class="ornament-line"></div></div></div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="page">
+    <div class="about-layout">
+      <div class="about-visual fade-up">
+        <div class="about-grid-bg"></div>
+        <div class="about-corner ac-tl"></div>
+        <div class="about-corner ac-tr"></div>
+        <div class="about-corner ac-bl"></div>
+        <div class="about-corner ac-br"></div>
+        <div class="about-accent"></div>
+        <div class="about-name-block">
+          <div class="about-name-text">cindrall</div>
+          <div class="about-name-role">Roblox · Discord Developer</div>
+        </div>
+      </div>
+      <div class="about-text fade-up">
+        <div class="section-tag">About</div>
+        <h2 class="section-title" style="margin-bottom:24px;">Dev focused on<br><em>clean systems</em></h2>
+        <p>I'm a developer focused on building practical systems for games, communities, and automation. I enjoy taking complex feature ideas and breaking them into <strong>clean modules, remotes, server logic, and UI behavior.</strong></p>
+        <p>My work includes Roblox progression systems, combat mechanics, data saving, achievement systems, Discord moderation tools, anti-raid logic, verification flows, and permission-based security systems.</p>
+        <div class="about-best">
+          <div class="about-best-label">What I'm best at</div>
+          <p>Turning messy feature ideas into organized systems that actually work. I focus on clean structure, reliable communication between client and server, and features that are easy to expand later.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="page">
+    <div class="fade-up">
+      <div class="section-tag">Let's Build Something</div>
+      <h2 class="section-title">Ready when<br><em>you are.</em></h2>
+    </div>
+    <div class="contact-layout">
+      <div class="fade-up">
+        <p class="contact-intro">Need Roblox systems, UI scripting, progression features, or a Discord bot? I'm available for commissions. Reach out on Discord and let's talk about what you need.</p>
+        <div class="contact-detail">
+          <div class="contact-dot"></div>
+          <span>Discord — <strong>cindrall_</strong></span>
+        </div>
+        <div class="contact-detail">
+          <div class="contact-dot"></div>
+          <span>Sentinel — <strong>sentinel-project.net</strong></span>
+        </div>
+        <div class="contact-detail">
+          <div class="contact-dot"></div>
+          <span>Taking commissions — <strong>open</strong></span>
+        </div>
+        <div class="contact-btns">
+          <a href="https://discord.com/users/1074012139838263316" target="_blank" class="btn-gold">Contact on Discord</a>
+          <a href="https://sentinel-project.net/" target="_blank" class="btn-outline">View Sentinel Project</a>
+        </div>
+      </div>
+      <div class="contact-quote fade-up">
+        <p class="contact-quote-text">Turning messy feature ideas into organized systems that actually work — clean structure, reliable communication, and code that's easy to expand.</p>
+        <div class="contact-quote-note">cindrall — systems philosophy</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="page">
+    <div class="footer-inner">
+      <span>© 2026 cindrall</span>
+      <div class="footer-links">
+        <a href="https://discord.com/users/1074012139838263316" target="_blank">Discord</a>
+        <a href="https://sentinel-project.net/" target="_blank">Sentinel</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const cursor = document.getElementById('cursor');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+  });
+  document.querySelectorAll('a, .work-item, .cap-box, .skill-pill').forEach(el => {
+    el.addEventListener('mouseenter', () => cursor.classList.add('big'));
+    el.addEventListener('mouseleave', () => cursor.classList.remove('big'));
+  });
+
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 50));
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.07 });
+  document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
